@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Generated logs, videos and experiment results
+logs/
+*.mp4
+*.mkv
+*.avi
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store

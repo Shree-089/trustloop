@@ -1,0 +1,155 @@
+<mujoco model="trustloop_scene">
+  <!--
+    TrustLoop scene: self-contained 6-DOF arm + parallel-jaw gripper,
+    tabletop, red cube (free body), blue open-top container.
+    Units: metres, kilograms, seconds. Table surface is at z = 0.40.
+  -->
+  <compiler angle="degree" autolimits="true"/>
+
+  <option timestep="0.002" integrator="implicitfast" cone="elliptic" impratio="10"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720" azimuth="135" elevation="-25"/>
+    <headlight ambient="0.35 0.35 0.35" diffuse="0.6 0.6 0.6" specular="0.1 0.1 0.1"/>
+    <quality shadowsize="4096"/>
+  </visual>
+
+  <asset>
+    <texture name="sky" type="skybox" builtin="gradient" rgb1="0.82 0.87 0.93" rgb2="0.32 0.38 0.46" width="512" height="512"/>
+    <texture name="floor_tex" type="2d" builtin="checker" rgb1="0.27 0.29 0.32" rgb2="0.22 0.24 0.27" width="512" height="512"/>
+    <material name="floor_mat" texture="floor_tex" texrepeat="8 8" reflectance="0.05"/>
+    <texture name="wood" type="2d" builtin="flat" rgb1="0.72 0.60 0.45" width="64" height="64"/>
+    <material name="table_mat" texture="wood" rgba="0.76 0.64 0.48 1"/>
+    <material name="arm_mat" rgba="0.90 0.91 0.93 1" specular="0.4" shininess="0.6"/>
+    <material name="joint_mat" rgba="0.18 0.20 0.24 1"/>
+    <material name="finger_mat" rgba="0.15 0.15 0.17 1"/>
+    <material name="cube_mat" rgba="0.86 0.10 0.10 1" specular="0.3"/>
+    <material name="bin_mat" rgba="0.12 0.38 0.86 1" specular="0.2"/>
+  </asset>
+
+  <default>
+    <!-- Arm links: collide with world objects (contype 1) but not with each other. -->
+    <default class="arm">
+      <geom contype="2" conaffinity="1" material="arm_mat" density="600"/>
+      <joint damping="2.0" armature="0.05"/>
+    </default>
+    <default class="finger">
+      <geom contype="2" conaffinity="1" material="finger_mat" density="800"
+            friction="1.5 0.02 0.002" condim="4" solref="0.004 1" solimp="0.95 0.99 0.001"/>
+      <joint type="slide" damping="3.0" armature="0.01" range="0 0.045"/>
+    </default>
+    <default class="world_obj">
+      <geom contype="1" conaffinity="1"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <light name="key" pos="0.8 -0.6 2.2" dir="-0.3 0.3 -1" directional="true" castshadow="true" diffuse="0.6 0.6 0.6"/>
+    <geom name="floor" type="plane" size="3 3 0.1" material="floor_mat" contype="1" conaffinity="1"/>
+
+    <!-- Point the overview camera at the workspace. -->
+    <body name="workspace_center" pos="0.28 0.02 0.52"/>
+    <camera name="overview" pos="1.30 -0.55 1.25" mode="targetbody" target="workspace_center" fovy="52"/>
+    <camera name="side" pos="0.40 -1.30 0.70" mode="targetbody" target="workspace_center" fovy="40"/>
+
+    <!-- Table: top surface at z = 0.40 -->
+    <body name="table" pos="0.35 0 0">
+      <geom name="table_top" class="world_obj" type="box" size="0.50 0.60 0.02" pos="0 0 0.38"
+            material="table_mat" friction="0.8 0.01 0.001"/>
+      <geom type="box" size="0.03 0.03 0.18" pos=" 0.45  0.55 0.18" material="table_mat" contype="0" conaffinity="0"/>
+      <geom type="box" size="0.03 0.03 0.18" pos=" 0.45 -0.55 0.18" material="table_mat" contype="0" conaffinity="0"/>
+      <geom type="box" size="0.03 0.03 0.18" pos="-0.45  0.55 0.18" material="table_mat" contype="0" conaffinity="0"/>
+      <geom type="box" size="0.03 0.03 0.18" pos="-0.45 -0.55 0.18" material="table_mat" contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- ================= Robot arm (6 revolute joints) ================= -->
+    <body name="base" pos="0 0 0.40" childclass="arm">
+      <geom name="pedestal" type="cylinder" size="0.08 0.05" pos="0 0 0.05" material="joint_mat"/>
+
+      <body name="link1" pos="0 0 0.10" gravcomp="1">
+        <joint name="j1" axis="0 0 1" range="-170 170"/>
+        <geom type="cylinder" size="0.055 0.05" pos="0 0 0.05" material="joint_mat"/>
+
+        <body name="link2" pos="0 0 0.10" gravcomp="1">
+          <joint name="j2" axis="0 1 0" range="-110 110"/>
+          <geom type="cylinder" size="0.05 0.05" quat="0.7071 0.7071 0 0" material="joint_mat"/>
+          <geom name="upper_arm" type="capsule" fromto="0 0 0 0 0 0.35" size="0.04"/>
+
+          <body name="link3" pos="0 0 0.35" gravcomp="1">
+            <joint name="j3" axis="0 1 0" range="-150 150"/>
+            <geom type="cylinder" size="0.045 0.045" quat="0.7071 0.7071 0 0" material="joint_mat"/>
+            <geom name="forearm" type="capsule" fromto="0 0 0 0 0 0.30" size="0.035"/>
+
+            <body name="link4" pos="0 0 0.30" gravcomp="1">
+              <joint name="j4" axis="0 0 1" range="-170 170"/>
+              <geom type="cylinder" size="0.035 0.02" pos="0 0 0.02" material="joint_mat"/>
+
+              <body name="link5" pos="0 0 0.04" gravcomp="1">
+                <joint name="j5" axis="0 1 0" range="-125 125"/>
+                <geom type="cylinder" size="0.032 0.035" quat="0.7071 0.7071 0 0" material="joint_mat"/>
+                <geom type="capsule" fromto="0 0 0 0 0 0.06" size="0.03"/>
+
+                <body name="link6" pos="0 0 0.06" gravcomp="1">
+                  <joint name="j6" axis="0 0 1" range="-170 170"/>
+                  <geom type="cylinder" size="0.03 0.01" pos="0 0 0.01" material="joint_mat"/>
+
+                  <!-- Hand: local +z points out of the wrist (towards fingertips). -->
+                  <body name="hand" pos="0 0 0.02" gravcomp="1">
+                    <geom name="palm" type="box" size="0.065 0.025 0.015" pos="0 0 0.015" material="joint_mat"/>
+                    <!-- Grasp point: between the pads, 1.5 cm above the pad tips. -->
+                    <site name="ee_site" pos="0 0 0.075" size="0.006" rgba="0 1 0 0.6"/>
+
+                    <body name="finger_left" pos="0 0 0.03" gravcomp="1" childclass="finger">
+                      <joint name="finger_left_joint" axis="-1 0 0"/>
+                      <geom name="finger_left_pad" type="box" size="0.006 0.014 0.03" pos="-0.006 0 0.03"/>
+                    </body>
+                    <body name="finger_right" pos="0 0 0.03" gravcomp="1" childclass="finger">
+                      <joint name="finger_right_joint" axis="1 0 0"/>
+                      <geom name="finger_right_pad" type="box" size="0.006 0.014 0.03" pos="0.006 0 0.03"/>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- ================= Red cube (4 cm, 50 g, free body) ================= -->
+    <body name="cube" pos="0.40 -0.20 0.42">
+      <freejoint name="cube_free"/>
+      <geom name="cube_geom" class="world_obj" type="box" size="0.02 0.02 0.02" mass="0.05"
+            material="cube_mat" friction="1.2 0.02 0.002" condim="4"/>
+    </body>
+
+    <!-- ============ Blue container: open-top bin, 14 cm interior ============ -->
+    <!-- Interior half-width 0.07, wall thickness 0.01, floor 0.01, wall height 0.08 -->
+    <body name="container" pos="0.40 0.25 0.40">
+      <geom name="bin_floor"  class="world_obj" type="box" size="0.08 0.08 0.005" pos="0 0 0.005" material="bin_mat"/>
+      <geom name="bin_wall_px" class="world_obj" type="box" size="0.005 0.08 0.04" pos=" 0.075 0 0.05" material="bin_mat"/>
+      <geom name="bin_wall_nx" class="world_obj" type="box" size="0.005 0.08 0.04" pos="-0.075 0 0.05" material="bin_mat"/>
+      <geom name="bin_wall_py" class="world_obj" type="box" size="0.07 0.005 0.04" pos="0  0.075 0.05" material="bin_mat"/>
+      <geom name="bin_wall_ny" class="world_obj" type="box" size="0.07 0.005 0.04" pos="0 -0.075 0.05" material="bin_mat"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <position name="a1" joint="j1" kp="600" dampratio="1" forcerange="-150 150"/>
+    <position name="a2" joint="j2" kp="900" dampratio="1" forcerange="-200 200"/>
+    <position name="a3" joint="j3" kp="700" dampratio="1" forcerange="-150 150"/>
+    <position name="a4" joint="j4" kp="200" dampratio="1" forcerange="-50 50"/>
+    <position name="a5" joint="j5" kp="200" dampratio="1" forcerange="-50 50"/>
+    <position name="a6" joint="j6" kp="100" dampratio="1" forcerange="-30 30"/>
+    <!-- Gripper: 0 = fully closed, 0.045 = fully open (per finger). Force-limited squeeze. -->
+    <position name="finger_left_act"  joint="finger_left_joint"  kp="500" forcerange="-12 12" ctrlrange="0 0.045"/>
+    <position name="finger_right_act" joint="finger_right_joint" kp="500" forcerange="-12 12" ctrlrange="0 0.045"/>
+  </actuator>
+
+  <keyframe>
+    <!-- HOME: arm raised, gripper pointing down and open. qpos = 6 arm + 2 fingers + cube(7) -->
+    <key name="home"
+         qpos="0 0.35 1.35 0 1.4416 0  0.04 0.04  0.40 -0.20 0.42 1 0 0 0"
+         ctrl="0 0.35 1.35 0 1.4416 0  0.04 0.04"/>
+  </keyframe>
+</mujoco>

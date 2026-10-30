@@ -1,0 +1,9 @@
+# Extra pins for Octo's requirements.txt (commit 241fb35, mid-2024).
+# Octo leaves these unpinned. Their current releases break the pinned stack
+# (found by installing in a clean Python 3.10 env on 2026-10-30):
+#   tensorflow-metadata >=1.15 needs protobuf>=5 (google.protobuf.runtime_version) -> TF 2.15 import fails
+#   scipy >=1.13 removed scipy.linalg.tril, which jax 0.4.20 wraps -> jax import fails
+#   transformers >=5 removed the Flax models (FlaxT5EncoderModel) Octo's language encoder uses
+tensorflow-metadata==1.14.0
+scipy==1.11.4
+transformers==4.36.2
